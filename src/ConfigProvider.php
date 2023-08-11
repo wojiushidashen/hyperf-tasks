@@ -10,8 +10,8 @@ class ConfigProvider
     {
         return [
             'dependencies' => [
-                '\Hyperf\Tasks\redis\RedisLockInterface' => '\Hyperf\Tasks\redis\RedisLock',
-                '\Hyperf\Tasks\tasks\TaskInterface' => '\Hyperf\Tasks\tasks\Task',
+                \Hyperf\Tasks\redis\RedisLockInterface::class => \Hyperf\Tasks\redis\RedisLock::class,
+                \Hyperf\Tasks\tasks\TaskInterface::class => \Hyperf\Tasks\tasks\Task::class,
             ],
             'commands' => [
             ],
@@ -24,10 +24,10 @@ class ConfigProvider
             ],
             'publish' => [
                 [
-                    'id' => 'crontab_task',
-                    'description' => 'The config of redis client.',
-                    'source' => __DIR__ . '/../publish/crontab_task.php',
-                    'destination' => BASE_PATH . '/config/autoload/crontab_task.php',
+                    'id' => 'migrations',
+                    'description' => '数据表迁移.',
+                    'source' => __DIR__ . '/../src/migrations/2023_08_10_092902_crontab_tasks.php',
+                    'destination' => BASE_PATH . '/migrations/2023_08_10_092902_crontab_tasks.php',
                 ],
             ],
         ];

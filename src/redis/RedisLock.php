@@ -6,7 +6,7 @@ namespace Hyperf\Tasks\redis;
 
 use Hyperf\Utils\ApplicationContext;
 
-class RedisLock implements RedisLockInterface
+class RedisLock implements \Hyperf\Tasks\redis\RedisLockInterface
 {
     /**
      * @var \Hyperf\Redis\Redis|mixed
@@ -17,7 +17,7 @@ class RedisLock implements RedisLockInterface
      * 前缀.
      * @var string
      */
-    private $_prefix = 'redis-lock';
+    private $_prefix = 'REDIS_LOCK';
 
     public function __construct()
     {
@@ -76,7 +76,7 @@ else
 end        
 LUA_SCRIPT;
 
-        return (bool) $this->_redis->eval($luaScript, $this->_buildKey($key), $value);
+        return (bool) $this->_redis->eval($luaScript, ['KEYS' => $this->_buildKey($key), 'ARGV' => $value]);
     }
 
     /**

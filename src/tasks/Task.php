@@ -9,7 +9,7 @@ use Hyperf\Tasks\exceptions\TaskException;
 use Hyperf\Tasks\models\CrontabTasks;
 use Hyperf\Tasks\redis\RedisLockInterface;
 
-class Task implements TaskInterface
+class Task implements \Hyperf\Tasks\tasks\TaskInterface
 {
     private $_lockKey = 'CRONTAB_TASK_KEY';
 
@@ -20,9 +20,16 @@ class Task implements TaskInterface
      */
     private $_redisLock;
 
+    protected $operator = 0;
+
     public function __construct(RedisLockInterface $redisLock)
     {
         $this->_redisLock = $redisLock;
+    }
+
+    public function setOperator($operator)
+    {
+        $this->operator = $operator;
     }
 
     /**
@@ -53,6 +60,8 @@ class Task implements TaskInterface
             $taskModel->delete();
             $this->_unlock($this->_generateSignName($taskName, $params));
         });
+
+        return true;
     }
 
     /**
@@ -60,7 +69,7 @@ class Task implements TaskInterface
      */
     public function run(string $taskName, int $bathSize, callable $callback = null): bool
     {
-        ini_set('memory_limit', -1);
+        ini_set('memory_limit', '-1');
         set_time_limit(0);
 
         $this->_getTasks($taskName, $bathSize, function ($task) use ($callback) {
@@ -78,20 +87,17 @@ class Task implements TaskInterface
             }
 
             $startTime = time();
-
             $this->_startTask($taskModel);
 
             try {
                 $res = $callback($params);
-                if ($res && $res = $this->_strToArray($res)) {
-                    $task->result = $res;
-                }
+                $res = $this->_strToArray($res);
                 $error = '';
                 $status = CrontabTasks::STATUS_ENDED;
             } catch (\Throwable $throwable) {
                 $error = $this->_setErrorInfo($throwable->getMessage(), $throwable->getFile(), $throwable->getLine(), $throwable->getTraceAsString());
                 $status = CrontabTasks::STATUS_ERROR;
-                $res = '';
+                $res = [];
             }
 
             $execTime = time() - $startTime;
@@ -115,24 +121,24 @@ class Task implements TaskInterface
         return true;
     }
 
-    private function _startTask(CrontabTasks $task)
+    private function _startTask(CrontabTasks &$task)
     {
         $task->status = CrontabTasks::STATUS_STARTING;
-        $task->save(false);
+        $task->save();
     }
 
-    private function _setStatusInfo(CrontabTasks $task, $status, $error = '', $res = '', $execTime = 0)
+    private function _setStatusInfo(CrontabTasks &$task, $status, $error = '', $res = [], $execTime = 0)
     {
         $task->status = $status;
         if ($error) {
             $task->error = $error;
         }
         if ($res) {
-            $task->result = $res;
+            $task->result = json_encode($res, JSON_UNESCAPED_UNICODE);
         }
 
         $task->exec_time = $execTime;
-        $task->save(false);
+        $task->save();
     }
 
     private function _setErrorInfo(string $message, string $file = '', string $line = '0', string $trance = '')
@@ -156,11 +162,12 @@ class Task implements TaskInterface
     {
         $task = CrontabTasks::create([
             'name' => $taskName,
-            'params' => $params,
+            'params' => json_encode($params, JSON_UNESCAPED_UNICODE),
             'is_single' => intval($isSingle),
             'status' => CrontabTasks::STATUS_WAITING,
             'switch' => CrontabTasks::SWITCH_OPEN,
             'md5' => $this->_generateSignName($taskName, $params),
+            'operator' => $this->operator,
         ]);
 
         return (string) $task->id;
@@ -190,12 +197,19 @@ class Task implements TaskInterface
 
     private function _lock(string $md5)
     {
-        return $this->_redisLock->spin($this->_lockKey, $md5, $this->_lockExpire);
+        $key = $this->_getRedisLockKey($md5);
+        return $this->_redisLock->spin($key, '1' , $this->_lockExpire);
     }
 
     private function _unlock(string $md5)
     {
-        return $this->_redisLock->release($this->_lockKey, $md5);
+        $key = $this->_getRedisLockKey($md5);
+        return $this->_redisLock->forceRelease($key);
+    }
+
+    private function _getRedisLockKey(string $md5)
+    {
+        return sprintf('%s:%s', $this->_lockKey, $md5);
     }
 
     private function _strToArray($str)

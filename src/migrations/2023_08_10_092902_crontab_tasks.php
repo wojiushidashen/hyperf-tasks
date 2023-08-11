@@ -1,14 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Hyperf\Tasks\migrations;
-
 use Hyperf\Database\Migrations\Migration;
 use Hyperf\Database\Schema\Blueprint;
 use Hyperf\Database\Schema\Schema;
 
-class CreateTaskTable extends Migration
+class CrontabTasks extends Migration
 {
     public function up(): void
     {
@@ -24,14 +20,14 @@ class CreateTaskTable extends Migration
 
             $table->bigIncrements('id')->autoIncrement()->comment('ID');
             $table->string('name', 100)->nullable(false)->default('')->comment('任务名称');
-            $table->json('params')->comment('参数');
+            $table->json('params')->nullable()->comment('参数');
             $table->string('md5', 200)->comment('md5验证值');
             $table->tinyInteger('status')->nullable(false)->default(0)->comment('状态：0未开始 1等待执行 2执行中 3已结束 4错误');
             $table->tinyInteger('switch')->nullable(false)->default(0)->comment('开关：0关闭 1开启');
-            $table->text('error')->comment('错误信息');
+            $table->text('error')->nullable()->comment('错误信息');
             $table->integer('exec_time')->nullable(false)->default(0)->comment('执行时间：单位s');
             $table->tinyInteger('is_single')->nullable(false)->default(0)->comment('是否是单次执行');
-            $table->json('result')->comment('任务执行完成后的结果');
+            $table->json('result')->nullable()->comment('任务执行完成后的结果');
             $table->bigInteger('operator')->nullable(false)->default(0)->comment('任务执行完成后的结果');
             $table->timestamp('created_time')->nullable()->comment('创建时间');
             $table->timestamp('updated_time')->nullable()->comment('更新时间');
