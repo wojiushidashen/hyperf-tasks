@@ -22,6 +22,8 @@ class Task implements \Hyperf\Tasks\tasks\TaskInterface
 
     protected $operator = 0;
 
+    protected $delayTime = 0;
+
     public function __construct(RedisLockInterface $redisLock)
     {
         $this->_redisLock = $redisLock;
@@ -30,6 +32,13 @@ class Task implements \Hyperf\Tasks\tasks\TaskInterface
     public function setOperator($operator)
     {
         $this->operator = $operator;
+    }
+
+    public function delay(int $delayTime = 0)
+    {
+        $this->delayTime = $delayTime;
+
+        return $this;
     }
 
     /**
@@ -168,6 +177,7 @@ class Task implements \Hyperf\Tasks\tasks\TaskInterface
             'switch' => CrontabTasks::SWITCH_OPEN,
             'md5' => $this->_generateSignName($taskName, $params),
             'operator' => $this->operator,
+            'delay' => $this->delayTime,
         ]);
 
         return (string) $task->id;
@@ -180,10 +190,16 @@ class Task implements \Hyperf\Tasks\tasks\TaskInterface
             ->where('status', CrontabTasks::STATUS_WAITING)
             ->where('switch', CrontabTasks::SWITCH_OPEN)
             ->limit($batchSize)
+            ->orderBy('delay')
+            ->orderBy('created_time')
             ->chunkById(100, function ($tasks) use ($callback) {
                 if ($callback) {
+                    /* @var CrontabTasks $task */
                     foreach ($tasks as $task) {
-                        $callback($task);
+                        // 处理延迟任务
+                        if ($task->delay == 0 || ($task->delay + strtotime($task->created_time) <= time())) {
+                            $callback($task);
+                        }
                     }
                 }
             });

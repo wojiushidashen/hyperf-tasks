@@ -106,6 +106,9 @@ class IndexController extends AbstractController
         $userId = 1;
         $task->setOperator($userId);
         
+        // 设置延迟时间（s）
+        $task->delay(10);
+        
         // 标识
         $key = 'test1';
         // 参数

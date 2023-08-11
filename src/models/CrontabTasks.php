@@ -18,6 +18,7 @@ use Hyperf\Database\Model\Model;
  * @property null|string $error 错误信息
  * @property int $exec_time 执行时间：单位s
  * @property int $is_single 是否是单次执行
+ * @property int $delay 延迟执行时间，单位：s
  * @property string $result 任务执行完成后的结果
  * @property null|string $created_time
  * @property null|string $updated_time
@@ -52,9 +53,11 @@ class CrontabTasks extends Model
 
     protected $table = 'crontab_tasks';
 
-    protected $fillable = ['id', 'name', 'params', 'md5', 'status', 'switch', 'error', 'exec_time', 'is_single', 'result', 'operator', 'created_time', 'updated_time'];
+    protected $fillable = ['id', 'name', 'params', 'md5', 'status', 'switch', 'error', 'exec_time', 'is_single', 'result', 'operator', 'delay', 'created_time', 'updated_time'];
 
     protected $casts = [
         'id' => 'string',
+        'created_time' => 'string',
+        'updated_time' => 'string',
     ];
 }

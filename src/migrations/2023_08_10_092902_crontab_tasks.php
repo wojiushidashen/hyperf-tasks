@@ -29,6 +29,7 @@ class CrontabTasks extends Migration
             $table->tinyInteger('is_single')->nullable(false)->default(0)->comment('是否是单次执行');
             $table->json('result')->nullable()->comment('任务执行完成后的结果');
             $table->bigInteger('operator')->nullable(false)->default(0)->comment('任务执行完成后的结果');
+            $table->integer('delay')->nullable(false)->default(0)->comment('延迟执行时间，单位：s');
             $table->timestamp('created_time')->nullable()->comment('创建时间');
             $table->timestamp('updated_time')->nullable()->comment('更新时间');
 
